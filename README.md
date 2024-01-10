@@ -2,6 +2,12 @@
 
 CCP555
 
+## To use link
+
+1. npm run lint
+
+2. node src/server.js
+
 ## To start the server use
 
 1. npm start
