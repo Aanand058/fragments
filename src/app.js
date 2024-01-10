@@ -47,6 +47,16 @@ app.get('/', (req, res) => {
   });
 });
 
+// Printing environment variables 
+app.get('/env', (req, res) => {
+
+  if (process.env.LOG_LEVEL === 'debug') {
+    logger.debug({ environment_variables: process.env }, 'Environment Variables: ');
+    res.status(200).json({ environment_variables: process.env });
+  }
+
+});
+
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
   res.status(404).json({
@@ -57,6 +67,10 @@ app.use((req, res) => {
     },
   });
 });
+
+
+
+
 
 // Add error-handling middleware to deal with anything else
 // eslint-disable-next-line no-unused-vars
@@ -70,6 +84,9 @@ app.use((err, req, res, next) => {
   if (status > 499) {
     logger.error({ err }, `Error processing request`);
   }
+
+
+
 
   res.status(status).json({
     status: 'error',
