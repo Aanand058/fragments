@@ -2,7 +2,7 @@
 
 CCP555
 
-## To use link
+## To use lint
 
 1. npm run lint
 
