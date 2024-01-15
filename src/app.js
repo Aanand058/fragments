@@ -47,15 +47,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// // Printing environment variables 
-// app.get('/env', (req, res) => {
-
-//   if (process.env.LOG_LEVEL === 'debug') {
-//     logger.debug({ environment_variables: process.env }, 'Environment Variables: ');
-//     res.status(200).json({ environment_variables: process.env });
-//   }
-
-// });
 
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
