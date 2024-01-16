@@ -2,7 +2,9 @@
 
 CCP555
 
-## To use link
+## Use npm i install node_modules
+
+## To use lint
 
 1. npm run lint
 
