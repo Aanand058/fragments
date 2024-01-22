@@ -12,6 +12,7 @@ const passport = require('passport');
 
 const authenticate = require('./auth');
 
+const { createErrorResponse } = require('./response');
 
 const logger = require('./logger');
 const pino = require('pino-http')({
@@ -45,13 +46,7 @@ app.use('/', require('./routes'));
 
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
-  res.status(404).json({
-    status: 'error',
-    error: {
-      message: 'not found',
-      code: 404,
-    },
-  });
+  res.status(404).send(createErrorResponse(404, 'not found'));
 });
 
 
@@ -74,13 +69,7 @@ app.use((err, req, res, next) => {
 
 
 
-  res.status(status).json({
-    status: 'error',
-    error: {
-      message,
-      code: status,
-    },
-  });
+  res.status(status).send(createErrorResponse(status, message));
 });
 
 // Export our `app` so we can access it in server.js
