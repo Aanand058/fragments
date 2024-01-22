@@ -3,12 +3,6 @@
 
 
 
-const unneededVariable = 'This variable is never used';
-
-
-
-
-
 // Read environment variables from an .env file (if present)
 // NOTE: we only need to do this once, here in our app's main entry point.
 require('dotenv').config();
