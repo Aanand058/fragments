@@ -1,8 +1,4 @@
 // src/app.js
-
-
-
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -65,9 +61,6 @@ app.use((err, req, res, next) => {
   if (status > 499) {
     logger.error({ err }, `Error processing request`);
   }
-
-
-
 
   res.status(status).send(createErrorResponse(status, message));
 });
