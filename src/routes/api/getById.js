@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
     const fragment = new Fragment(await Fragment.byId(req.user, id));
     const fragmentData = await fragment.getData();
 
-    res.status(200).setHeader('content-type', 'text/plain').send(fragmentData);
+    res.status(200).setHeader('content-type', fragment.type).send(fragmentData);
   } catch (err) {
     logger.error(err);
     res.status(404).send(createErrorResponse(404, 'Fragment not found'));

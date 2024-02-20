@@ -133,8 +133,16 @@ class Fragment {
    */
   get formats() {
     let format = [];
+
     if (this.type.startsWith('text/plain')) {
       format = ['text/plain'];
+    }
+    else if (this.type.startsWith('text/markdown')) {
+      format = ['text/plain', 'text/html', 'text/markdown'];
+    } else if (this.type.startsWith('text/html')) {
+      format = ['text/plain', 'text/markdown'];
+    } else if (this.type.startsWith('application/json')) {
+      format = ['application/json', 'text/plain'];
     }
     return format;
   }
@@ -146,7 +154,8 @@ class Fragment {
    */
   static isSupportedType(value) {
 
-    if (value == 'text/plain' || value == 'text/plain; charset=utf-8') {
+    if (value == 'text/plain' || value == 'text/plain; charset=utf-8'
+      || value == 'text/markdown' || value == 'text/html' || value == 'application/json') {
       return true;
     } else {
       return false;
