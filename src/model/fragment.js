@@ -149,23 +149,6 @@ class Fragment {
     return format;
   }
 
-  /**
-   * Returns true if we know how to work with this content type
-   * @param {string} value a Content-Type value (e.g., 'text/plain' or 'text/plain: charset=utf-8')
-   * @returns {boolean} true if we support this Content-Type (i.e., type/subtype)
-   */
-  static isSupportedType(value) {
-
-    if (value == 'text/plain' || value == 'text/plain; charset=utf-8'
-      || value == 'text/markdown' || value == 'text/html' || value == 'application/json') {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-
-
   isSupportedExt(ext) {
     if (this.type == 'text/plain' && ext == '.txt') {
       return true;
@@ -188,6 +171,25 @@ class Fragment {
   }
 
 
+  /**
+   * Returns true if we know how to work with this content type
+   * @param {string} value a Content-Type value (e.g., 'text/plain' or 'text/plain: charset=utf-8')
+   * @returns {boolean} true if we support this Content-Type (i.e., type/subtype)
+   */
+  static isSupportedType(value) {
+
+    if (value == 'text/plain' || value == 'text/plain; charset=utf-8'
+      || value == 'text/markdown' || value == 'text/html' || value == 'application/json') {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+
+
+
+
   convertConType(ext) {
     if (ext == '.txt') {
       return 'text/plain';
@@ -197,7 +199,6 @@ class Fragment {
       return 'text/html';
     } else if (ext == '.json') {
       return 'application/json';
-
     } else {
       return this.mimeType;
     }
