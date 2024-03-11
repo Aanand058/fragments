@@ -3,6 +3,8 @@
 const { randomUUID } = require('crypto');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
 const contentType = require('content-type');
+const md = require('markdown-it')();
+
 
 // Functions for working with fragment metadata/data using our DB
 const {
@@ -159,6 +161,61 @@ class Fragment {
       return true;
     } else {
       return false;
+    }
+  }
+
+
+
+  isSupportedExt(ext) {
+    if (this.type == 'text/plain' && ext == '.txt') {
+      return true;
+    } else if (this.type == 'text/markdown') {
+      if (ext == '.md' || ext == '.html' || ext == '.txt') {
+        return true;
+      }
+    } else if (this.type == 'text/html') {
+      if (ext == '.html' || ext == '.txt') {
+        return true;
+      }
+    } else if (this.type == 'application/json') {
+      if (ext == '.json' || ext == '.txt') {
+        return true;
+      }
+    }
+    else {
+      return false;
+    }
+  }
+
+
+  convertConType(ext) {
+    if (ext == '.txt') {
+      return 'text/plain';
+    } else if (ext == '.md') {
+      return 'text/markdown';
+    } else if (ext == '.html') {
+      return 'text/html';
+    } else if (ext == '.json') {
+      return 'application/json';
+
+    } else {
+      return this.mimeType;
+    }
+  }
+
+
+  async convertData(extname) {
+    try {
+      var fragData = await this.getData();
+      var result;
+      if (extname == '.txt') {
+        result = fragData.toString();
+      } else if (this.mimeType == 'text/markdown' && extname == '.html') {
+        result = md.render(fragData.toString());
+      }
+      return result;
+    } catch (err) {
+      throw new Error(err);
     }
   }
 
