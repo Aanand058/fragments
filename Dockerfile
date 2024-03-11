@@ -2,7 +2,7 @@
 
 FROM node:19.1.0
 
-LABEL maintainer="Aanand Aman <aaman8@example.com>"
+LABEL maintainer="Aanand Aman <aaman8@myseneca.ca>"
 LABEL description="Fragments node.js microservice"
 
 # We default to use port 8080 in our service
