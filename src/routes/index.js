@@ -13,6 +13,10 @@ const router = express.Router();
 
 const { createSuccessResponse } = require('../response');
 
+
+//ECS walkthrough 
+const { hostname } = require('os');
+
 /**
  * Expose all of our API routes on /v1/* to include an API version.
  * Protect them all with middleware so you have to be authenticated
@@ -31,10 +35,11 @@ router.get('/', (req, res) => {
   res.status(200).json(
     createSuccessResponse({
       status: 'ok',
-      author,
+      author: "Aanand Aman",
       // Use your own GitHub URL for this!
       githubUrl: 'https://github.com/Aanand058/fragments',
       version,
+      hostname: hostname(),
     }));
 });
 
