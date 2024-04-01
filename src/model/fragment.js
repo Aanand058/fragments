@@ -62,11 +62,11 @@ class Fragment {
    * @returns Promise<Fragment>
    */
   static async byId(ownerId, id) {
-    const result = await readFragment(ownerId, id);
-    if (!result) {
-      throw new Error('Not Found');
+    try {
+      return new Fragment(await readFragment(ownerId, id))
+    } catch (error) {
+      throw new Error('Unable to fincd id with that fragment');
     }
-    return result;
 
   }
 
@@ -103,12 +103,17 @@ class Fragment {
    * @returns Promise<void>
    */
   async setData(data) {
-    if (!data) {
-      throw new Error('Data Error');
+    try {
+      if (!data) {
+        return Promise.reject(new Error('Data cannot be empty.'));
+      }
+      this.updated = new Date().toISOString();
+      this.size = data.length;
+      await writeFragment(this);
+      return writeFragmentData(this.ownerId, this.id, data);
+    } catch (err) {
+      Promise.reject(err);
     }
-    this.updated = new Date().toISOString();
-    this.size = data.byteLength;
-    return writeFragmentData(this.ownerId, this.id, data);
   }
 
   /**
