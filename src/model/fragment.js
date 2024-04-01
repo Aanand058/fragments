@@ -110,7 +110,7 @@ class Fragment {
       this.updated = new Date().toISOString();
       this.size = data.length;
       await writeFragment(this);
-      return writeFragmentData(this.ownerId, this.id, data);
+      await writeFragmentData(this.ownerId, this.id, data);
     } catch (err) {
       Promise.reject(err);
     }
