@@ -132,3 +132,6 @@ jobs:
           ./scripts/local-aws-setup.sh
       - name: Run Hurl Tests
         run: npm run test:integration
+        # Addition - If the tests fail, dump the logs to help debug
+      - name: Dump fragments service logs
+        run: docker compose logs fragments
