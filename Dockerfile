@@ -1,6 +1,6 @@
 # Docker 
 
-FROM node:19.1.0
+FROM node:20.12.1
 
 LABEL maintainer="Aanand Aman <aaman8@myseneca.ca>"
 LABEL description="Fragments node.js microservice"
