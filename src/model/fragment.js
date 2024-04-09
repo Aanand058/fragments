@@ -3,7 +3,6 @@
 const { randomUUID } = require('crypto');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
 const contentType = require('content-type');
-const md = require('markdown-it')();
 
 
 // Functions for working with fragment metadata/data using our DB
@@ -109,7 +108,7 @@ class Fragment {
       }
       this.updated = new Date().toISOString();
       this.size = data.length;
-      await writeFragment(this);
+      // await writeFragment(this);
       await writeFragmentData(this.ownerId, this.id, data);
     } catch (err) {
       Promise.reject(err);
@@ -139,41 +138,25 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    let format = [];
-
-    if (this.type.startsWith('text/plain')) {
-      format = ['text/plain'];
-    }
-    else if (this.type.startsWith('text/markdown')) {
-      format = ['text/plain', 'text/html', 'text/markdown'];
-    } else if (this.type.startsWith('text/html')) {
-      format = ['text/plain', 'text/markdown'];
-    } else if (this.type.startsWith('application/json')) {
-      format = ['application/json', 'text/plain'];
-    }
-    return format;
-  }
-
-  isSupportedExt(ext) {
-    if (this.type == 'text/plain' && ext == '.txt') {
-      return true;
+    if (this.type == 'text/plain' || this.type == 'text/plain; charset=utf-8') {
+      return ['text/plain'];
     } else if (this.type == 'text/markdown') {
-      if (ext == '.md' || ext == '.html' || ext == '.txt') {
-        return true;
-      }
+      return ['text/markdown', 'text/html', 'text/plain'];
     } else if (this.type == 'text/html') {
-      if (ext == '.html' || ext == '.txt') {
-        return true;
-      }
-    } else if (this.type == 'application/json') {
-      if (ext == '.json' || ext == '.txt') {
-        return true;
-      }
+      return ['text/html', 'text/plain'];
+    } else if (this.type == 'application/json' || this.type == 'application/json; charset=utf-8') {
+      return ['text/plain', 'application/json'];
+    } else if (
+      this.type == 'image/png' ||
+      this.type == 'image/jpeg' ||
+      this.type == 'image/webp' ||
+      this.type == 'image/gif'
+    ) {
+      return ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
     }
-    else {
-      return false;
-    }
+    return [];
   }
+
 
 
   /**
@@ -184,7 +167,9 @@ class Fragment {
   static isSupportedType(value) {
 
     if (value == 'text/plain' || value == 'text/plain; charset=utf-8'
-      || value == 'text/markdown' || value == 'text/html' || value == 'application/json') {
+      || value == 'text/markdown' || value == 'text/html' || value == 'application/json'
+      || value == 'image/jpeg' || value == 'image/png' || value == 'image/webp' ||
+      value == 'image/gif') {
       return true;
     } else {
       return false;
@@ -194,36 +179,6 @@ class Fragment {
 
 
 
-
-  convertConType(ext) {
-    if (ext == '.txt') {
-      return 'text/plain';
-    } else if (ext == '.md') {
-      return 'text/markdown';
-    } else if (ext == '.html') {
-      return 'text/html';
-    } else if (ext == '.json') {
-      return 'application/json';
-    } else {
-      return this.mimeType;
-    }
-  }
-
-
-  async convertData(extname) {
-    try {
-      var fragData = await this.getData();
-      var result;
-      if (extname == '.txt') {
-        result = fragData.toString();
-      } else if (this.mimeType == 'text/markdown' && extname == '.html') {
-        result = md.render(fragData.toString());
-      }
-      return result;
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
 
 }
 
