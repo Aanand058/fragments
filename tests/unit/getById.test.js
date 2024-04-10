@@ -1,5 +1,5 @@
 const request = require('supertest');
-//const fs = require('fs');
+const fs = require('fs');
 const app = require('../../src/app');
 
 describe('GetById /fragments/:_id', () => {
@@ -72,36 +72,36 @@ describe('GetById /fragments/:_id', () => {
     expect(getRes.statusCode).toBe(200);
   });
 
-  // test('authenticated user requests of post to  get/:id.ext from md to html', async () => {
-  //   const postRes = await request(app)
-  //     .post('/v1/fragments')
-  //     .auth('user1@email.com', 'password1')
-  //     .set('Content-Type', 'text/markdown')
-  //     .send('# This is a markdown');
+  test('authenticated user requests of post to  get/:id.ext from md to html', async () => {
+    const postRes = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@email.com', 'password1')
+      .set('Content-Type', 'text/markdown')
+      .send('# This is a markdown');
 
-  //   const getRes = await request(app)
-  //     .get('/v1/fragments/' + postRes.body.fragment.id + '.html')
-  //     .auth('user1@email.com', 'password1');
-  //   expect(getRes.statusCode).toBe(200);
-  //   expect(getRes.headers['content-type']).toBe('text/html; charset=utf-8');
-  // });
+    const getRes = await request(app)
+      .get('/v1/fragments/' + postRes.body.fragment.id + '.html')
+      .auth('user1@email.com', 'password1');
+    expect(getRes.statusCode).toBe(200);
+    expect(getRes.headers['content-type']).toBe('text/html; charset=utf-8');
+  });
 
-  // test('authenticated user requests of post to get/:id.ext from png to jpeg', async () => {
-  //   const file = fs.readFileSync('tests/unit/cat1.png');
-  //   const blob = Buffer.from(file);
+  test('authenticated user requests of post to get/:id.ext from png to jpeg', async () => {
+    const file = fs.readFileSync('tests/unit/cat1.png');
+    const blob = Buffer.from(file);
 
-  //   const postRes = await request(app)
-  //     .post('/v1/fragments')
-  //     .auth('user1@email.com', 'password1')
-  //     .set('Content-Type', 'image/png')
-  //     .send(blob);
+    const postRes = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@email.com', 'password1')
+      .set('Content-Type', 'image/png')
+      .send(blob);
 
-  //   const getRes = await request(app)
-  //     .get('/v1/fragments/' + postRes.body.fragment.id + '.jpg')
-  //     .auth('user1@email.com', 'password1');
-  //   expect(getRes.statusCode).toBe(200);
-  //   expect(getRes.headers['content-type']).toBe('image/jpeg');
-  // });
+    const getRes = await request(app)
+      .get('/v1/fragments/' + postRes.body.fragment.id + '.jpg')
+      .auth('user1@email.com', 'password1');
+    expect(getRes.statusCode).toBe(200);
+    expect(getRes.headers['content-type']).toBe('image/jpeg');
+  });
 
 
 });
