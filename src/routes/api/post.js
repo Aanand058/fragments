@@ -1,6 +1,3 @@
-
-//src/routes/api/post.js
-
 const { Fragment } = require('../../model/fragment');
 const { createSuccessResponse, createErrorResponse } = require('../../response');
 const apiUrl = process.env.API_URL;

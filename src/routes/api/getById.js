@@ -1,77 +1,30 @@
-//getById.js
-
-const { createErrorResponse } = require('../../../src/response');
-const { readFragmentData } = require('../../../src/model/data/index');
-const { Fragment } = require('../../../src/model/fragment');
-var mime = require('mime-types');
+// src/routes/api/getById.js
+const { createErrorResponse } = require('../../response');
+const { Fragment } = require('../../model/fragment');
+const logger = require('../../logger');
 const path = require('path');
-var md = require('markdown-it')({ html: true });
-const sharp = require('sharp');
-
-
-
-
 
 module.exports = async (req, res) => {
+  const id = path.parse(req.url).name;
+  const ext = path.extname(req.url);
 
-  let metaDataFragment;
-  const idExt = path.parse(req.params.id);
-  let returnedFragment = await readFragmentData(req.user, idExt.name);
-
-  if (returnedFragment) {
-    metaDataFragment = await Fragment.byId(req.user, idExt.name);
-  } else {
-    const errorResponse = createErrorResponse(404, 'Not Found!');
-    return res.status(404).json(errorResponse);
-  }
-
-  if (idExt.ext != '') {
-    const ext = mime.lookup(idExt.ext);
-    if (metaDataFragment.formats.includes(ext)) {
-      res.setHeader('Content-Type', ext);
-      returnedFragment = await convert(metaDataFragment.type, ext, returnedFragment);
+  try {
+    const fragment = new Fragment(await Fragment.byId(req.user, id));
+    const fragmentData = await fragment.getData();
+    if (ext) {
+      if (fragment.isSupportedExt(ext)) {
+        res
+          .status(200)
+          .setHeader('content-type', fragment.convertConType(ext))
+          .send(await fragment.convertFragmentData(ext));
+      } else {
+        res.status(415).send(createErrorResponse(415, 'Not supported extension'));
+      }
     } else {
-      const errorResponse = createErrorResponse(415, 'Invalid extension!!!');
-      return res.status(415).json(errorResponse);
+      res.status(200).setHeader('content-type', fragment.type).send(fragmentData);
     }
-  } else {
-    res.setHeader('Content-Type', metaDataFragment.type);
+  } catch (err) {
+    logger.error(err);
+    res.status(404).send(createErrorResponse(404, 'Fragment not found'));
   }
-  res.setHeader('Content-Length', metaDataFragment.size);
-  return res.status(200).send(returnedFragment);
 };
-
-const convert = async (type, ext, returnedFragment) => {
-  if (type == 'text/markdown' && ext == 'text/html') {
-    returnedFragment = md.render(returnedFragment.toString());
-    returnedFragment.type = 'text/html';
-  } else if (
-    (type == 'text/markdown' ||
-      type == 'text/html' ||
-      type == 'application/json' ||
-      type == 'text/html') &&
-    ext == 'text/html'
-  ) {
-    returnedFragment.type = 'text/plain';
-  } else if (
-    type == 'image/png' ||
-    type == 'image/jpeg' ||
-    type == 'image/webp' ||
-    type == 'image/gif'
-  ) {
-    if (ext == 'image/png') {
-      returnedFragment = await sharp(returnedFragment).toFormat('png').toBuffer();
-    } else if (ext == 'image/jpeg') {
-      returnedFragment = await sharp(returnedFragment).toFormat('jpeg').toBuffer();
-    } else if (ext == 'image/webp') {
-      returnedFragment = await sharp(returnedFragment).toFormat('webp').toBuffer();
-    } else if (ext == 'image/gif') {
-      returnedFragment = await sharp(returnedFragment).toFormat('gif').toBuffer();
-    }
-  }
-
-  return returnedFragment;
-};
-
-
-

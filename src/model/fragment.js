@@ -64,7 +64,7 @@ class Fragment {
     try {
       return new Fragment(await readFragment(ownerId, id))
     } catch (error) {
-      throw new Error('Unable to fincd id with that fragment');
+      throw new Error('Unable to find id with that fragment');
     }
 
   }
