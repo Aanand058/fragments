@@ -1,68 +1,115 @@
+//https://github.com/markdown-it/markdown-it
+var MarkdownIt = require('markdown-it'),
+  md = new MarkdownIt();
 
-const { createErrorResponse } = require('../../../src/response');
-const { readFragmentData } = require('../../../src/model/data/index');
-const { Fragment } = require('../../../src/model/fragment');
-var mime = require('mime-types');
-const path = require('path');
-var md = require('markdown-it')({ html: true });
 const sharp = require('sharp');
 
-const convert = async (type, ext, returnedFragment) => {
-  if (type == 'text/markdown' && ext == 'text/html') {
-    returnedFragment = md.render(returnedFragment.toString());
-    returnedFragment.type = 'text/html';
-  } else if (
-    (type == 'text/markdown' ||
-      type == 'text/html' ||
-      type == 'application/json' ||
-      type == 'text/html') &&
-    ext == 'text/html'
-  ) {
-    returnedFragment.type = 'text/plain';
-  } else if (
-    type == 'image/png' ||
-    type == 'image/jpeg' ||
-    type == 'image/webp' ||
-    type == 'image/gif'
-  ) {
-    if (ext == 'image/png') {
-      returnedFragment = await sharp(returnedFragment).toFormat('png').toBuffer();
-    } else if (ext == 'image/jpeg') {
-      returnedFragment = await sharp(returnedFragment).toFormat('jpeg').toBuffer();
-    } else if (ext == 'image/webp') {
-      returnedFragment = await sharp(returnedFragment).toFormat('webp').toBuffer();
-    } else if (ext == 'image/gif') {
-      returnedFragment = await sharp(returnedFragment).toFormat('gif').toBuffer();
-    }
-  }
+const logger = require('../../logger');
+const { createErrorResponse } = require('../../response');
+const { Fragment } = require('../../model/fragment');
 
-  return returnedFragment;
-};
-
+/**
+ * Get a fragment for the current user
+ */
 module.exports = async (req, res) => {
-  let metaDataFragment;
-  const idExt = path.parse(req.params.id);
-  let returnedFragment = await readFragmentData(req.user, idExt.name);
+  try {
+    const fragmentFound = await Fragment.byId(req.user, req.params.id);
 
-  if (returnedFragment) {
-    metaDataFragment = await Fragment.byId(req.user, idExt.name);
-  } else {
-    const errorResponse = createErrorResponse(404, 'not found');
-    return res.status(404).json(errorResponse);
-  }
+    const fragment = new Fragment({
+      id: fragmentFound.id,
+      ownerId: fragmentFound.ownerId,
+      type: fragmentFound.type,
+      created: fragmentFound.created,
+      updated: fragmentFound.updated,
+      size: fragmentFound.size,
+    });
 
-  if (idExt.ext != '') {
-    const ext = mime.lookup(idExt.ext);
-    if (metaDataFragment.formats.includes(ext)) {
-      res.setHeader('Content-Type', ext);
-      returnedFragment = await convert(metaDataFragment.type, ext, returnedFragment);
+    if (Fragment.isSupportedType(fragment.type)) {
+      //conversion extensions
+      //1 .html
+      if (req.params.ext === 'html') {
+        //1.1 only text/markdown or text/html can be converted to .html
+        if (fragment.type === 'text/markdown' || fragment.type === 'text/html') {
+          const getData = await fragment.getData();
+          const data = md.render(`${getData}`);
+          res.setHeader('Content-Type', 'text/html');
+          res.status(200).send(data);
+        } else {
+          res.status(415).json(createErrorResponse(415, 'Cannot convert to .html'));
+        }
+      }
+      //2 .txt
+      else if (req.params.ext === 'txt') {
+        if (
+          fragment.type === 'text/plain' ||
+          fragment.type === 'text/markdown' ||
+          fragment.type === 'text/html' ||
+          fragment.type === 'application/json'
+        ) {
+          const data = await fragment.getData();
+          res.setHeader('Content-Type', 'text/plain');
+          res.status(200).send(data);
+        } else {
+          res.status(415).json(createErrorResponse(415, 'Cannot convert to .txt'));
+        }
+      }
+      //3 .md
+      else if (req.params.ext === 'md') {
+        if (fragment.type === 'text/markdown') {
+          const data = await fragment.getData();
+          res.setHeader('Content-Type', 'text/markdown');
+          res.status(200).send(data);
+        } else {
+          res.status(415).json(createErrorResponse(415, 'Cannot convert to .md'));
+        }
+      }
+      //4 .json
+      else if (req.params.ext === 'json') {
+        if (fragment.type === 'application/json') {
+          const data = await fragment.getData();
+          res.setHeader('Content-Type', 'application/json');
+          res.status(200).send(data);
+        } else {
+          res.status(415).json(createErrorResponse(415, 'Cannot convert to .json'));
+        }
+      }
+      //5 .png .jpg, .webp, .git
+      else if (
+        req.params.ext === 'png' ||
+        req.params.ext === 'jpg' ||
+        req.params.ext === 'webp' ||
+        req.params.ext === 'gif'
+      ) {
+        if (
+          fragment.type === 'image/png' ||
+          fragment.type === 'image/jpeg' ||
+          fragment.type === 'image/webp' ||
+          fragment.type === 'image/gif'
+        ) {
+          const getData = await fragment.getData();
+
+          const data = await sharp(getData).toFormat(req.params.ext).toBuffer();
+          const fragmentType = 'image/' + req.params.ext;
+          res.setHeader('Content-Type', fragmentType);
+          res.status(200).send(data);
+        } else {
+          res.status(415).json(createErrorResponse(415, 'Cannot convert'));
+        }
+      }
+      //6 no specified extension
+      else if (typeof req.params.ext === 'undefined') {
+        const data = await fragment.getData();
+        res.setHeader('Content-Type', fragment.type);
+        res.status(200).send(data);
+      } else {
+        res.status(415).json(createErrorResponse(415, 'Not support converting'));
+      }
     } else {
-      const errorResponse = createErrorResponse(415, 'Invalid extension');
-      return res.status(415).json(errorResponse);
+      res.status(415).json(createErrorResponse(415, 'Content type not supported'));
     }
-  } else {
-    res.setHeader('Content-Type', metaDataFragment.type);
+  } catch (err) {
+    logger.error({ err }, 'error on get a fragment');
+
+    res.status(404).json(createErrorResponse(404, 'not get by id'));
   }
-  res.setHeader('Content-Length', metaDataFragment.size);
-  return res.status(200).send(returnedFragment);
 };

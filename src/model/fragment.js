@@ -50,8 +50,8 @@ class Fragment {
    * @returns Promise<Array<Fragment>>
    */
   static async byUser(ownerId, expand = false) {
-    let f = await listFragments(ownerId, expand);
-    return f;
+    let fragments = await listFragments(ownerId, expand);
+    return Promise.resolve(fragments)
   }
 
   /**
@@ -61,11 +61,11 @@ class Fragment {
    * @returns Promise<Fragment>
    */
   static async byId(ownerId, id) {
-    try {
-      return new Fragment(await readFragment(ownerId, id))
-    } catch (error) {
-      throw new Error('Unable to find id with that fragment');
+    const result = await readFragment(ownerId, id);
+    if (!result) {
+      throw new Error('Not Exist or Has been deleted');
     }
+    return result;
 
   }
 
@@ -108,7 +108,7 @@ class Fragment {
       }
       this.updated = new Date().toISOString();
       this.size = data.length;
-      // await writeFragment(this);
+      await writeFragment(this);
       await writeFragmentData(this.ownerId, this.id, data);
     } catch (err) {
       Promise.reject(err);
