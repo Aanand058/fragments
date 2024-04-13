@@ -35,7 +35,7 @@ POST http://localhost:8080/v1/fragments
 Content-Type: text/markdown
 [BasicAuth]
 user1@email.com:password1
-```DynamoDB is **great**.```
+`Test DynamoDB`
 
 # 5. Confirm that the server returns a 201
 HTTP/1.1 201
@@ -60,7 +60,7 @@ jsonpath "$.fragment.created" matches /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3
 jsonpath "$.fragment.updated" isString
 jsonpath "$.fragment.updated" matches /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 jsonpath "$.fragment.type" == "text/markdown"
-jsonpath "$.fragment.size" == 22
+jsonpath "$.fragment.size" == 13
 
 # 7. GET all of the fragments for the same authorized user (no expanding)
 GET http://localhost:8080/v1/fragments
