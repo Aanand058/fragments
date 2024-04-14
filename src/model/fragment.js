@@ -1,10 +1,12 @@
+
 // Use crypto.randomUUID() to create unique IDs, see:
 // https://nodejs.org/api/crypto.html#cryptorandomuuidoptions
 const { randomUUID } = require('crypto');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
 const contentType = require('content-type');
-const md = require('markdown-it')();
 const sharp = require('sharp');
+const MarkdownIt = require('markdown-it'),
+  md = new MarkdownIt();
 
 // Functions for working with fragment metadata/data using our DB
 const {
@@ -16,31 +18,57 @@ const {
   deleteFragment,
 } = require('./data');
 
+const supportedTypes = [
+  'text/plain',
+  'text/plain; charset=utf-8',
+  'text/markdown',
+  'text/html',
+  'application/json',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+];
 
 class Fragment {
   constructor({ id, ownerId, created, updated, type, size = 0 }) {
-
-    this.id = id || randomUUID();
-
-    if (!ownerId) {
-      throw new Error('ownerId Error');
-    } else {
-      this.ownerId = ownerId;
+    if (!ownerId || !type || !Fragment.isSupportedType(type)) {
+      throw new Error('Invalid ownerId or type');
     }
 
-    if (Fragment.isSupportedType(type)) {
+    if (id) {
+      this.id = id;
+    } else {
+      this.id = randomUUID();
+    }
+
+    if (ownerId) {
+      this.ownerId = ownerId;
+    } else {
+      throw new Error(`ownerId is required, got ownerId=${ownerId}`);
+    }
+
+    if (type) {
       this.type = type;
     } else {
-      throw new Error('Type Error');
+      throw new Error(`Content-Type is required, got Content-Type=${ownerId}`);
     }
 
-    this.created = created || new Date().toISOString();
-    this.updated = updated || new Date().toISOString();
-
-    if (typeof size != 'number' || size < 0) {
-      throw new Error('Size must be  greater than 0 and should be a number.');
+    if (size < 0 || typeof size === 'string') {
+      throw new Error('size cannot be negative and cannot be a type of String');
     } else {
       this.size = size;
+    }
+
+    if (created) {
+      this.created = created;
+    } else {
+      this.created = new Date().toISOString();
+    }
+    if (updated) {
+      this.updated = updated;
+    } else {
+      this.updated = new Date().toISOString();
     }
   }
 
@@ -51,8 +79,15 @@ class Fragment {
    * @returns Promise<Array<Fragment>>
    */
   static async byUser(ownerId, expand = false) {
-    let fragments = await listFragments(ownerId, expand);
-    return Promise.resolve(fragments)
+    try {
+      const fragments = await listFragments(ownerId, expand);
+      if (expand) {
+        return fragments.map((fragment) => new Fragment(fragment));
+      }
+      return fragments;
+    } catch (err) {
+      return [];
+    }
   }
 
   /**
@@ -62,19 +97,18 @@ class Fragment {
    * @returns Promise<Fragment>
    */
   static async byId(ownerId, id) {
-    const result = await readFragment(ownerId, id);
-    if (!result) {
-      throw new Error('Not Exist or Has been deleted');
+    try {
+      return new Fragment(await readFragment(ownerId, id));
+    } catch (err) {
+      throw new Error(`Cannot find the fragment with that ID`);
     }
-    return result;
-
   }
 
   /**
    * Delete the user's fragment data and metadata for the given id
    * @param {string} ownerId user's hashed email
    * @param {string} id fragment's id
-   * @returns Promise<void>
+   * @returns Promise
    */
   static delete(ownerId, id) {
     return deleteFragment(ownerId, id);
@@ -110,7 +144,7 @@ class Fragment {
       this.updated = new Date().toISOString();
       this.size = data.length;
       await writeFragment(this);
-      await writeFragmentData(this.ownerId, this.id, data);
+      return writeFragmentData(this.ownerId, this.id, data);
     } catch (err) {
       Promise.reject(err);
     }
@@ -131,7 +165,7 @@ class Fragment {
    * @returns {boolean} true if fragment's type is text/*
    */
   get isText() {
-    return this.type.startsWith('text/');
+    return this.mimeType.startsWith('text');
   }
 
   /**
@@ -139,26 +173,26 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    if (this.type == 'text/plain' || this.type == 'text/plain; charset=utf-8') {
-      return ['text/plain'];
-    } else if (this.type == 'text/markdown') {
-      return ['text/markdown', 'text/html', 'text/plain'];
-    } else if (this.type == 'text/html') {
-      return ['text/html', 'text/plain'];
-    } else if (this.type == 'application/json' || this.type == 'application/json; charset=utf-8') {
-      return ['text/plain', 'application/json'];
-    } else if (
-      this.type == 'image/png' ||
-      this.type == 'image/jpeg' ||
-      this.type == 'image/webp' ||
-      this.type == 'image/gif'
+    let result = [];
+    if (
+      this.type.includes('image/png') ||
+      this.type.includes('image/jpeg') ||
+      this.type.includes('image/gif') ||
+      this.type.includes('image/webp')
     ) {
-      return ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+      result = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    } else if (this.type.includes('text/plain')) {
+      result = ['text/plain'];
+    } else if (this.type.includes('text/markdown')) {
+      result = ['text/plain', 'text/html', 'text/markdown'];
+    } else if (this.type.includes('text/html')) {
+      result = ['text/plain', 'text/html'];
+    } else if (this.type.includes('application/json')) {
+      result = ['application/json', 'text/plain'];
     }
-    return [];
+
+    return result;
   }
-
-
 
   /**
    * Returns true if we know how to work with this content type
@@ -166,99 +200,59 @@ class Fragment {
    * @returns {boolean} true if we support this Content-Type (i.e., type/subtype)
    */
   static isSupportedType(value) {
+    return supportedTypes.includes(value);
+  }
 
-    if (value == 'text/plain' || value == 'text/plain; charset=utf-8'
-      || value == 'text/markdown' || value == 'text/html' || value == 'application/json'
-      || value == 'image/jpeg' || value == 'image/png' || value == 'image/webp' ||
-      value == 'image/gif') {
-      return true;
+  async txtConversion(value) {
+    var result, fragmentData;
+    fragmentData = await this.getData();
+    if (value == 'plain') {
+      if (this.type == 'application/json') {
+        result = JSON.parse(fragmentData);
+      } else {
+        result = fragmentData;
+      }
+    } else if (value == 'html') {
+      if (this.type.endsWith('markdown')) {
+        result = md.render(fragmentData.toString());
+      }
+    }
+
+    return result;
+  }
+
+  async ImgConversion(value) {
+    var result, fragmentData;
+    fragmentData = await this.getData();
+
+    if (this.type.startsWith('image')) {
+      if (value == 'gif') {
+        result = sharp(fragmentData).gif();
+      } else if (value == 'jpg' || value == 'jpeg') {
+        result = sharp(fragmentData).jpeg();
+      } else if (value == 'webp') {
+        result = sharp(fragmentData).webp();
+      } else if (value == 'png') {
+        result = sharp(fragmentData).png();
+      }
+    }
+
+    return result.toBuffer();
+  }
+
+  extConvert(value) {
+    var extension;
+    if (value == 'txt') {
+      extension = 'plain';
+    } else if (value == 'jpg') {
+      extension = 'jpeg';
+    } else if (value == 'md') {
+      extension = 'markdown';
     } else {
-      return false;
+      extension = value;
     }
+    return extension;
   }
-
-
-
-  isSupportedExt(extname) {
-    if (this.type == 'text/plain' && extname == '.txt') {
-      return true;
-    } else if (this.type == 'text/markdown') {
-      if (extname == '.md' || extname == '.html' || extname == '.txt') {
-        return true;
-      }
-    } else if (this.type == 'text/html') {
-      if (extname == '.html' || extname == '.txt') {
-        return true;
-      }
-    } else if (this.type == 'application/json') {
-      if (extname == '.json' || extname == '.txt') {
-        return true;
-      }
-    } else if (
-      this.type == 'image/png' ||
-      this.type == 'image/jpeg' ||
-      this.type == 'image/webp' ||
-      this.type == 'image/gif'
-    ) {
-      if (extname == '.png' || extname == '.jpg' || extname == '.webp' || extname == '.gif') {
-        return true;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  // Returns the corresponding type according to extname
-  convertContentType(extname) {
-    if (extname == '.txt') {
-      return 'text/plain';
-    } else if (extname == '.md') {
-      return 'text/markdown';
-    } else if (extname == '.html') {
-      return 'text/html';
-    } else if (extname == '.json') {
-      return 'application/json';
-    } else if (extname == '.png') {
-      return 'image/png';
-    } else if (extname == '.jpg') {
-      return 'image/jpeg';
-    } else if (extname == '.webp') {
-      return 'image/webp';
-    } else if (extname == '.gif') {
-      return 'image/gif';
-    } else {
-      return this.mimeType;
-    }
-  }
-
-  // Convert format according to extname
-  async convertData(extname) {
-    try {
-      var data = await this.getData();
-      var converted;
-      if (extname == '.txt') {
-        converted = data.toString();
-      } else if (this.mimeType == 'text/markdown' && extname == '.html') {
-        converted = md.render(data.toString());
-      }
-      if (extname == '.png') {
-        converted = await sharp(data).png().toBuffer();
-      } else if (extname == '.jpg') {
-        converted = await sharp(data).jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();
-      } else if (extname == '.webp') {
-        converted = await sharp(data).webp({ lossless: true }).toBuffer();
-      } else if (extname == '.gif') {
-        converted = await sharp(data).gif().toBuffer();
-      }
-      return converted;
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
-
-
-
-
 }
 
 module.exports.Fragment = Fragment;

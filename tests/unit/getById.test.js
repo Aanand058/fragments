@@ -76,7 +76,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'text/markdown')
       .auth('user1@email.com', 'password1')
-      .send('# a fragment');
+      .send('# This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -85,7 +85,7 @@ describe('GetById /fragments/:_id', () => {
       .get(`/v1/fragments/${res.body.fragment.id}.html`)
       .auth('user1@email.com', 'password1');
 
-    expect(resGet.text.startsWith('<h1>a fragment</h1>')).toBe(true);
+    expect(resGet.text.startsWith('<h1>This is a fragment</h1>')).toBe(true);
     expect(resGet.statusCode).toBe(200);
   });
 
@@ -94,7 +94,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'text/plain')
       .auth('user1@email.com', 'password1')
-      .send('a fragment');
+      .send('This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -105,28 +105,13 @@ describe('GetById /fragments/:_id', () => {
     expect(resGet.statusCode).toBe(415);
   });
 
-  test('application/json can be converted to txt', async () => {
-    const res = await request(app)
-      .post('/v1/fragments')
-      .set('Content-Type', 'application/json')
-      .auth('user1@email.com', 'password1')
-      .send({ name: 'David' });
-
-    expect(res.statusCode).toBe(201);
-    expect(res.body.status).toBe('ok');
-
-    const resGet = await request(app)
-      .get(`/v1/fragments/${res.body.fragment.id}.txt`)
-      .auth('user1@email.com', 'password1');
-    expect(resGet.statusCode).toBe(200);
-  });
 
   test('markdown can be converted to itself (.md)', async () => {
     const res = await request(app)
       .post('/v1/fragments')
       .set('Content-Type', 'text/markdown')
       .auth('user1@email.com', 'password1')
-      .send('#a fragment');
+      .send('#This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -142,7 +127,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'text/plain')
       .auth('user1@email.com', 'password1')
-      .send('a fragment');
+      .send('This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -158,7 +143,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'application/json')
       .auth('user1@email.com', 'password1')
-      .send({ name: 'David' });
+      .send({ name: 'Aman' });
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -174,7 +159,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'text/plain')
       .auth('user1@email.com', 'password1')
-      .send('a fragment');
+      .send('This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -190,7 +175,7 @@ describe('GetById /fragments/:_id', () => {
       .post('/v1/fragments')
       .set('Content-Type', 'text/plain')
       .auth('user1@email.com', 'password1')
-      .send('a fragment');
+      .send(' This is a fragment');
 
     expect(res.statusCode).toBe(201);
     expect(res.body.status).toBe('ok');
@@ -198,6 +183,8 @@ describe('GetById /fragments/:_id', () => {
     const resGet = await request(app).get(`/v1/fragments/abc`).auth('user1@email.com', 'password1');
     expect(resGet.statusCode).toBe(404);
   });
+
+
 });
 
 

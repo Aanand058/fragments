@@ -1,35 +1,36 @@
-// src/routes/api/get.js
 const { createErrorResponse } = require('../../response');
 const { Fragment } = require('../../model/fragment');
-const logger = require('../../logger');
 const path = require('path');
 
-/**
- * Get a fragment by id
- */
 module.exports = async (req, res) => {
-  var id = path.parse(req.url).name;
-  var extname = path.extname(req.url);
+  const query = path.parse(req.params.id);
+  let extension = query.ext.split('.').pop();
 
   try {
-    var fragment = new Fragment(await Fragment.byId(req.user, id));
-    if (extname) {
-      if (fragment.isSupportedExt(extname)) {
-        res.setHeader('content-type', fragment.convertContentType(extname));
-        res.status(200).send(await fragment.convertData(extname));
-      } else {
-        res
-          .status(415)
-          .json(
-            createErrorResponse(415, `This fragment does not support conversions of ${extname}`)
-          );
-      }
+    let fragmentData = await Fragment.byId(req.user, query.name);
+    let fragment = await fragmentData.getData();
+
+    extension = fragmentData.extConvert(extension);
+
+    if (query.ext == '' || fragmentData.type.endsWith(extension)) {
+      res.setHeader('Content-Type', fragmentData.type);
+      res.status(200).send(Buffer.from(fragment));
     } else {
-      var fragmentData = await fragment.getData();
-      res.status(200).setHeader('content-type', fragment.type).send(fragmentData);
+      try {
+        if (fragmentData.isText || fragmentData.type == 'application/json') {
+          let result = await fragmentData.txtConversion(extension);
+          res.setHeader('Content-Type', `text/${extension}`);
+          res.status(200).send(Buffer.from(result));
+        } else {
+          let result = await fragmentData.ImgConversion(extension);
+          res.setHeader('Content-Type', `image/${extension}`);
+          res.status(200).send(result);
+        }
+      } catch (err) {
+        res.status(415).json(createErrorResponse(415, `Not Supported Extension`));
+      }
     }
   } catch (err) {
-    logger.error(err);
-    res.status(404).json(createErrorResponse(404, 'Fragment not found'));
+    res.status(404).json(createErrorResponse(404, `Unknown Fragment`));
   }
 };
