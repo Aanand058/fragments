@@ -28,6 +28,7 @@ const supportedTypes = [
   'image/jpeg',
   'image/webp',
   'image/gif',
+  'image/avif',
 ];
 
 class Fragment {
@@ -178,9 +179,10 @@ class Fragment {
       this.type.includes('image/png') ||
       this.type.includes('image/jpeg') ||
       this.type.includes('image/gif') ||
-      this.type.includes('image/webp')
+      this.type.includes('image/webp') ||
+      this.type.includes('image/avif')
     ) {
-      result = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+      result = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'];
     } else if (this.type.includes('text/plain')) {
       result = ['text/plain'];
     } else if (this.type.includes('text/markdown')) {
@@ -234,6 +236,8 @@ class Fragment {
         result = sharp(fragmentData).webp();
       } else if (value == 'png') {
         result = sharp(fragmentData).png();
+      } else if (value == 'avif') {
+        result = sharp(fragmentData).avif();
       }
     }
 
@@ -248,7 +252,11 @@ class Fragment {
       extension = 'jpeg';
     } else if (value == 'md') {
       extension = 'markdown';
-    } else {
+    } else if (value == 'avif') {
+      extension = 'avif';
+    }
+
+    else {
       extension = value;
     }
     return extension;
