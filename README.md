@@ -1,13 +1,12 @@
-# fragments
+# Fragments Microservice Development
+A Cloud-Based Solution for Handling Different Types of Fragments
 
-CCP555
 
 ## Use npm i install node_modules
 
 ## To use lint
 
 1. npm run lint
-
 2. node src/server.js
 
 ## To start the server use
